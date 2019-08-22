@@ -76,9 +76,13 @@ $ git clone https://github.com/SIPp/sipp.git
 $ cd sipp
 $ ./build.sh --with-pcap --with-sctp --with-openssl
 ```
+Após a instalação do SIPP no host do cliente ainda dentro da pasta sipp, vamos testar se a conexão e chamada estão sendo estabelecidos. Ainda no terminal, execute o comando a seguir:
+```
+$ ./sipp -sn uac -d 30000 -s 55555 <ip-servidor-asterisk> -l 100 -trace_err -m 100 -r 1
+```
 
 ## SIPP
-Algumas inclusões de comandos que são importantes ter conhecimento:
+Algumas inclusões de comandos no terminal de suma importância e que são importantes ter conhecimento:
 ```
 -sf filename : Load test scenario from a specified file.
 -sd : Dumps one of the default scenarios. Usage example: sipp -sd uas > uas.xml.
@@ -97,6 +101,96 @@ Algumas inclusões de comandos que são importantes ter conhecimento:
                 If the expected message is not received, the call times out and is aborted.
 -trace_msg : Displays sent and received SIP messages in <scenario file name>_<pid>_messages.log
 -trace_err : Trace all unexpected messages in <scenario file name>_<pid>_errors.log
+```
+Para ter acesso a mais informações a respeito deles, basta executar o comando no terminal dentro da pasta do sipp:
+```
+./sipp --help
+```
+
+### SIPP - REGISTER CLIENT
+Para testar o registro no asterisk através do SIPP do host do cliente, copie o arquivo (REGISTER_client.xml) que está neste Github para a pasta sipp onde fez a instalação anteriomente ou crie o arquivo e cole o código abaixo:
+#### REGISTER_client.xml
+```
+<?xml version="1.0" encoding="ISO-8859-2" ?>
+
+<!--  
+Para a geração do arquivo CSV, siga o modelo: contexto que sera registrado no asterisk; endereço ip onde está o servidor;[authentication username=<username do contexto> password=<password do contexto>];
+Use with CSV file struct like: <context-sip.conf>;<address-asterisk>;[authentication username=<username> password=<password>];
+(user part of uri, server address, auth tag in each line)
+-->
+
+<scenario name="register_client">
+  <send retrans="500">
+retrans=500 means the TI timer set to 500 ms
+    <![CDATA[
+
+      REGISTER sip:[remote_ip] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From: <sip:[field0]@[field1]>;tag=[call_number]
+      To: <sip:[field0]@[field1]>
+      Call-ID: [call_id]
+      CSeq: [cseq] REGISTER
+      Contact: sip:[field0]@[local_ip]:[local_port]
+      Max-Forwards: 10
+      Expires: 120
+      User-Agent: SIPp/Win32
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <!-- asterisk -->
+  <recv response="200" >
+  </recv>
+
+  
+  <send retrans="500">
+    <![CDATA[
+
+      REGISTER sip:[remote_ip] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From: <sip:[field0]@[field1]>;tag=[call_number]
+      To: <sip:[field0]@[field1]>
+      Call-ID: [call_id]
+      CSeq: [cseq] REGISTER
+      Contact: sip:[field0]@[local_ip]:[local_port]
+      [field2]
+      Max-Forwards: 10
+      Expires: 120
+      User-Agent: SIPp/Win32
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <!-- asterisk -->
+  <recv response="100" optional="true">
+  </recv>
+
+  <recv response="200">
+  </recv>
+
+  <!-- response time repartition table (ms)   -->
+  <ResponseTimeRepartition value="10, 20, 30, 40, 50, 100, 150, 200"/>
+
+  <!-- call length repartition table (ms)     -->
+  <CallLengthRepartition value="10, 50, 100, 500, 1000, 5000, 10000"/>
+
+</scenario>
+```
+
+#### SIPP - REGISTER CSV
+Este arquivo é utilizado pelo sistema para gerar o registro no asterisk. Copie o arquivo (register.csv) que está neste Github para a pasta sipp onde fez a instalação anteriomente ou crie o arquivo e cole o código abaixo:
+```
+SEQUENTIAL
+<context-asterisk-sip.conf>;<ip-servidor-asterisk>;[authentication username=<user> password=<pass>];
+```
+Fique atento, pois é necessário mudar o IP que está sendo apresentado no arquivo de extensão **.csv**, pois é o endereço IP do servidor que está o asterisk.
+
+#### Cenário de teste
+Com os arquivos alocados no host do cliente com toda a infraestrutura de rede se comunicando, dentro da pasta de instalação do sipp execute o comando no terminal:
+```
+$ ./sipp -sn uac -d 10000 -s 55555 <ip-servidor-asteriskip-ser -l 100 -trace_err -m 100 -r 1
 ```
 
 ### Contact

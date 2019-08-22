@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="ISO-8859-2" ?>
+
+<!--  
+Para a geração do arquivo CSV, siga o modelo: contexto que sera registrado no asterisk; endereço ip onde está o servidor;[authentication username=<username do contexto> password=<password do contexto>];
+Use with CSV file struct like: <context-sip.conf>;<address-asterisk>;[authentication username=<username> password=<password>];
+(user part of uri, server address, auth tag in each line)
+-->
+
+<scenario name="register_client">
+  <send retrans="500">
+retrans=500 means the TI timer set to 500 ms
+    <![CDATA[
+
+      REGISTER sip:[remote_ip] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From: <sip:[field0]@[field1]>;tag=[call_number]
+      To: <sip:[field0]@[field1]>
+      Call-ID: [call_id]
+      CSeq: [cseq] REGISTER
+      Contact: sip:[field0]@[local_ip]:[local_port]
+      Max-Forwards: 10
+      Expires: 120
+      User-Agent: SIPp/Win32
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <!-- asterisk -->
+  <recv response="200" >
+  </recv>
+
+  
+  <send retrans="500">
+    <![CDATA[
+
+      REGISTER sip:[remote_ip] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From: <sip:[field0]@[field1]>;tag=[call_number]
+      To: <sip:[field0]@[field1]>
+      Call-ID: [call_id]
+      CSeq: [cseq] REGISTER
+      Contact: sip:[field0]@[local_ip]:[local_port]
+      [field2]
+      Max-Forwards: 10
+      Expires: 120
+      User-Agent: SIPp/Win32
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <!-- asterisk -->
+  <recv response="100" optional="true">
+  </recv>
+
+  <recv response="200">
+  </recv>
+
+  <!-- response time repartition table (ms)   -->
+  <ResponseTimeRepartition value="10, 20, 30, 40, 50, 100, 150, 200"/>
+
+  <!-- call length repartition table (ms)     -->
+  <CallLengthRepartition value="10, 50, 100, 500, 1000, 5000, 10000"/>
+
+</scenario>
